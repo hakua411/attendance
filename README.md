@@ -139,5 +139,6 @@ export default defineConfig({
 ## ER図
 
 ## URL
-- 開発環境:http://localhost/
-- phpMyAdmin:http://localhost:8080/
+- 開発環境:http://localhost
+- phpMyAdmin:http://localhost:8080
+- Mailpit: http://localhost:8025
