@@ -137,6 +137,67 @@ export default defineConfig({
 - MySQL 8.4
 
 ## ER図
+```mermaid
+erDiagram
+
+    users ||--o{ attendance_records : "一人のユーザーは複数の勤怠を持つ"
+    users ||--o{ applications : "一人のユーザーは複数の申請をする"
+    attendance_records ||--o{ breaks : "一つの勤怠は複数の休憩を持つ"
+    attendance_records ||--o{ applications : "一つの勤怠は複数の修正申請を持つ"
+    applications ||--o{ application_breaks : "一つの申請は複数の休憩申請を持つ"
+
+    users {
+        bigint id PK
+        string name
+        string email UK
+        string password
+        boolean admin_status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    attendance_records {
+        bigint id PK
+        bigint user_id FK
+        date date
+        time clock_in
+        time clock_out
+        text comment
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    breaks {
+        bigint id PK
+        bigint attendance_record_id FK
+        time break_in
+        time break_out
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    applications {
+        bigint id PK
+        bigint user_id FK
+        bigint attendance_record_id FK
+        time new_clock_in
+        time new_clock_out
+        text comment
+        tinyint approval_status
+        datetime application_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    application_breaks {
+        bigint id PK
+        bigint application_id FK
+        time break_in
+        time break_out
+        timestamp created_at
+        timestamp updated_at
+    }
+```
 
 ## URL
 - 開発環境:http://localhost
