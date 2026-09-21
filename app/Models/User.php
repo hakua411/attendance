@@ -53,4 +53,31 @@ class User extends Authenticatable
     {
         return $this->hasMany(Application::class);
     }
+
+    public function getAttendanceStatusAttribute()
+    {
+        $attendance = $this->attendances()
+            ->whereDate('date', today())
+            ->latest()
+            ->first();
+
+        if (! $attendance) {
+            return '勤務外';
+        }
+
+        if ($attendance->clock_out) {
+            return '退勤済';
+        }
+
+        $break = $attendance->breaks()
+            ->whereNull('break_out')
+            ->latest()
+            ->first();
+
+        if ($break) {
+            return '休憩中';
+        }
+
+        return '出勤中';
+    }
 }
