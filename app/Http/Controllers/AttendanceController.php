@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CorrectionRequest;
+use App\Models\Application;
+use App\Models\ApplicationBreak;
 use App\Models\Attendance;
 use App\Models\AttendanceBreak;
 use Carbon\Carbon;
@@ -116,5 +119,42 @@ class AttendanceController extends Controller
         if ($request->action === 'clock_out') {
             return $this->clockOut();
         }
+    }
+
+    public function correctionRequest(CorrectionRequest $request, $id)
+    {
+        $validated = $request->validated();
+
+        $attendance = Attendance::findOrFail($id);
+
+        $application = Application::create([
+            'user_id' => auth()->id(),
+            'attendance_record_id' => $attendance->id,
+            'new_clock_in' => $validated['new_clock_in'],
+            'new_clock_out' => $validated['new_clock_out'],
+            'comment' => $validated['comment'],
+            'approval_status' => 0,
+            'application_date' => now()->toDateString(),
+        ]);
+
+        $breakIns = $validated['new_break_in'] ?? [];
+        $breakOuts = $validated['new_break_out'] ?? [];
+
+        foreach ($breakIns as $index => $breakIn) {
+            $breakOut = $breakOuts[$index] ?? null;
+
+            // 両方空欄なら登録しない
+            if (empty($breakIn) && empty($breakOut)) {
+                continue;
+            }
+
+            ApplicationBreak::create([
+                'application_id' => $application->id,
+                'break_in' => $breakIn,
+                'break_out' => $breakOut,
+            ]);
+        }
+
+        return redirect('/attendance/list');
     }
 }
