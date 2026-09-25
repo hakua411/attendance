@@ -17,6 +17,11 @@ class AttendanceBreak extends Model
         'break_out',
     ];
 
+    protected $casts = [
+        'break_in' => 'datetime',
+        'break_out' => 'datetime',
+    ];
+
     public function attendance()
     {
         return $this->belongsTo(Attendance::class, 'attendance_record_id');

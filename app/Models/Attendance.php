@@ -19,6 +19,12 @@ class Attendance extends Model
         'comment',
     ];
 
+    protected $casts = [
+        'date' => 'date',
+        'clock_in' => 'datetime',
+        'clock_out' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -31,6 +37,9 @@ class Attendance extends Model
 
     public function applications()
     {
-        return $this->hasMany(Application::class);
+        return $this->hasMany(
+            Application::class,
+            'attendance_record_id'
+        );
     }
 }

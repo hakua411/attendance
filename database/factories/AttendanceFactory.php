@@ -22,7 +22,7 @@ class AttendanceFactory extends Factory
 
         return [
             'user_id' => null,
-            'date' => now()->subDay()->format('Y-m-d'),
+            'date' => now()->format('Y-m-d'),
             'clock_in' => $clockIn->format('H:i:s'),
             'clock_out' => $clockOut->format('H:i:s'),
             'comment' => null,
