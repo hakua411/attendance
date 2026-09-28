@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminAttendanceController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceListDetailController;
@@ -42,10 +43,20 @@ Route::get('/application/{id}', [CorrectionRequestController::class, 'show'])
 
 Route::post(
     '/attendance/{id}',
-    [CorrectionRequestController::class, 'store']
+    [AttendanceController::class, 'correctionRequest']
 )->middleware('auth');
 
-Route::post(
-    '/attendance/{id}',
-    [AttendanceController::class, 'correctionRequest']
-);
+Route::get('/admin/attendance/list', [
+    AdminAttendanceController::class,
+    'index',
+])->middleware(['auth', 'admin']);
+
+Route::get('/admin/attendance/{id}', [
+    AdminAttendanceController::class,
+    'show',
+])->middleware(['auth', 'admin']);
+
+Route::post('/admin/attendance/{id}', [
+    AdminAttendanceController::class,
+    'update',
+])->middleware(['auth', 'admin']);
