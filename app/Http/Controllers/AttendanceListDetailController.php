@@ -97,6 +97,11 @@ class AttendanceListDetailController extends Controller
 
     public function show($id)
     {
+        // 管理者の場合は管理者用の詳細画面を表示
+        if (auth()->user()->admin_status == 1) {
+            return app(AdminAttendanceController::class)->show($id);
+        }
+
         $user = auth()->user();
 
         $attendance = Attendance::with([

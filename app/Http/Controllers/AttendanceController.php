@@ -123,6 +123,11 @@ class AttendanceController extends Controller
 
     public function correctionRequest(CorrectionRequest $request, $id)
     {
+        // 管理者の場合は、管理者による直接修正
+        if (auth()->user()->admin_status == 1) {
+            return app(AdminAttendanceController::class)->update($request, $id);
+        }
+
         $validated = $request->validated();
 
         $attendance = Attendance::findOrFail($id);
