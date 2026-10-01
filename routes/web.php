@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\AdminAttendanceController;
+use App\Http\Controllers\AdminCorrectionRequestController;
 use App\Http\Controllers\AdminLoginController;
+use App\Http\Controllers\AdminStaffController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceListDetailController;
 use App\Http\Controllers\CorrectionRequestController;
-use App\Http\Controllers\LoginController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -18,7 +19,10 @@ Route::get('/admin/login', function () {
 
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
 
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/admin/logout', [
+    AdminLoginController::class,
+    'logout',
+]);
 
 Route::get('/attendance', [AttendanceController::class, 'create'])
     ->middleware('auth')
@@ -34,9 +38,25 @@ Route::get('/attendance/{id}', [AttendanceListDetailController::class, 'show'])
     ->middleware('auth')
     ->name('attendance.show');
 
-Route::get('/stamp_correction_request/list', [CorrectionRequestController::class, 'index'])
+Route::get('/stamp_correction_request/list', function () {
+    if ((int) auth()->user()->admin_status === 1) {
+        return app(AdminCorrectionRequestController::class)->index();
+    }
+
+    return app(CorrectionRequestController::class)->index();
+})
     ->middleware('auth')
     ->name('correction_requests.index');
+
+Route::get('/stamp_correction_request/approve/{id}', [
+    AdminCorrectionRequestController::class,
+    'show',
+])->middleware(['auth', 'admin']);
+
+Route::post('/stamp_correction_request/approve/{id}', [
+    AdminCorrectionRequestController::class,
+    'approve',
+])->middleware(['auth', 'admin']);
 
 Route::get('/application/{id}', [CorrectionRequestController::class, 'show'])
     ->middleware('auth');
@@ -59,4 +79,14 @@ Route::get('/admin/attendance/{id}', [
 Route::post('/admin/attendance/{id}', [
     AdminAttendanceController::class,
     'update',
+])->middleware(['auth', 'admin']);
+
+Route::get('/admin/staff/list', [
+    AdminStaffController::class,
+    'index',
+])->middleware(['auth', 'admin']);
+
+Route::get('/admin/attendance/staff/{id}', [
+    AdminStaffController::class,
+    'show',
 ])->middleware(['auth', 'admin']);
