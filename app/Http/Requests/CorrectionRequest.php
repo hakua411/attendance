@@ -25,16 +25,16 @@ class CorrectionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'new_clock_in.required' => '出勤時間を入力してください。',
-            'new_clock_in.date_format' => '出勤時間を正しい形式で入力してください。',
+            'new_clock_in.required' => '出勤時間を入力してください',
+            'new_clock_in.date_format' => '出勤時間を正しい形式で入力してください',
 
-            'new_clock_out.required' => '退勤時間を入力してください。',
-            'new_clock_out.date_format' => '退勤時間を正しい形式で入力してください。',
+            'new_clock_out.required' => '退勤時間を入力してください',
+            'new_clock_out.date_format' => '退勤時間を正しい形式で入力してください',
 
-            'new_break_in.*.date_format' => '休憩開始時間を正しい形式で入力してください。',
-            'new_break_out.*.date_format' => '休憩終了時間を正しい形式で入力してください。',
+            'new_break_in.*.date_format' => '休憩開始時間を正しい形式で入力してください',
+            'new_break_out.*.date_format' => '休憩終了時間を正しい形式で入力してください',
 
-            'comment.required' => '備考を記入してください。',
+            'comment.required' => '備考を記入してください',
         ];
     }
 
