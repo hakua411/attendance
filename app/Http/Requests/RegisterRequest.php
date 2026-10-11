@@ -7,11 +7,17 @@ use Illuminate\Validation\Rule;
 
 class RegisterRequest extends FormRequest
 {
+    /**
+     * リクエストの実行を許可する。
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * 会員登録時のバリデーションルールを定義する。
+     */
     public function rules(): array
     {
         return [
@@ -34,6 +40,9 @@ class RegisterRequest extends FormRequest
         ];
     }
 
+    /**
+     * バリデーションエラーメッセージを定義する。
+     */
     public function messages(): array
     {
         return [

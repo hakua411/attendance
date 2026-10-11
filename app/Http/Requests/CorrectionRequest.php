@@ -3,14 +3,25 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class CorrectionRequest extends FormRequest
 {
+    /**
+     * このリクエストを実行する権限があるか判定する。
+     *
+     * @return bool 実行を許可する場合はtrue
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * 入力値のバリデーションルールを定義する。
+     *
+     * @return array<string, mixed> バリデーションルール
+     */
     public function rules(): array
     {
         return [
@@ -22,6 +33,11 @@ class CorrectionRequest extends FormRequest
         ];
     }
 
+    /**
+     * バリデーションエラーメッセージを定義する。
+     *
+     * @return array<string, string> エラーメッセージ
+     */
     public function messages(): array
     {
         return [
@@ -38,9 +54,14 @@ class CorrectionRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator)
+    /**
+     * 出退勤時間と休憩時間の前後関係を追加検証する。
+     *
+     * @param  Validator  $validator  バリデーション処理
+     */
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator): void {
             $clockIn = $this->input('new_clock_in');
             $clockOut = $this->input('new_clock_out');
 

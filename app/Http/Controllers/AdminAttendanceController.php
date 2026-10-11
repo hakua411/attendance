@@ -6,11 +6,18 @@ use App\Http\Requests\CorrectionRequest;
 use App\Models\Attendance;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AdminAttendanceController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * 指定日の全ユーザーの勤怠一覧を表示する。
+     *
+     * @param  Request  $request  HTTPリクエスト
+     */
+    public function index(Request $request): View
     {
         // 表示する日付を取得
         $date = $request->query('date')
@@ -24,24 +31,24 @@ class AdminAttendanceController extends Controller
         // 全ユーザーを取得
         $users = User::all();
 
-        // 指定日の勤怠を取得
+        // 指定日の勤怠を取得（休憩も先読み）
         $attendanceRecords = Attendance::with('breaks')
             ->whereDate('date', $date)
             ->get();
 
         // 勤務時間・休憩時間を計算
-        foreach ($attendanceRecords as $attendance) {
+        $attendanceRecords->each(function (Attendance $attendance): void {
             // 休憩時間の合計
-            $totalBreakSeconds = 0;
+            $totalBreakSeconds = $attendance->breaks->sum(
+                function ($break): int {
+                    if (! $break->break_in || ! $break->break_out) {
+                        return 0;
+                    }
 
-            foreach ($attendance->breaks as $break) {
-                if ($break->break_in && $break->break_out) {
-                    $breakIn = Carbon::parse($break->break_in);
-                    $breakOut = Carbon::parse($break->break_out);
-
-                    $totalBreakSeconds += $breakIn->diffInSeconds($breakOut);
+                    return Carbon::parse($break->break_in)
+                        ->diffInSeconds(Carbon::parse($break->break_out));
                 }
-            }
+            );
 
             $attendance->total_break_time = $totalBreakSeconds > 0
                 ? gmdate('H:i:s', $totalBreakSeconds)
@@ -49,17 +56,15 @@ class AdminAttendanceController extends Controller
 
             // 勤務時間
             if ($attendance->clock_in && $attendance->clock_out) {
-                $clockIn = Carbon::parse($attendance->clock_in);
-                $clockOut = Carbon::parse($attendance->clock_out);
-
-                $workSeconds = $clockIn->diffInSeconds($clockOut);
-                $workSeconds -= $totalBreakSeconds;
+                $workSeconds = Carbon::parse($attendance->clock_in)
+                    ->diffInSeconds(Carbon::parse($attendance->clock_out))
+                    - $totalBreakSeconds;
 
                 $attendance->total_time = gmdate('H:i:s', $workSeconds);
             } else {
                 $attendance->total_time = null;
             }
-        }
+        });
 
         return view('admin.admin-attendance-list', compact(
             'date',
@@ -70,13 +75,20 @@ class AdminAttendanceController extends Controller
         ));
     }
 
-    public function show($id)
+    /**
+     * 指定された勤怠の詳細を表示する。
+     *
+     * @param  int  $id  勤怠ID
+     */
+    public function show(int $id): View
     {
-        $attendance = Attendance::with('breaks')->findOrFail($id);
+        // 勤怠・休憩・ユーザーをまとめて先読み
+        $attendance = Attendance::with(['breaks', 'user'])
+            ->findOrFail($id);
 
         $user = $attendance->user;
 
-        $breaks = $attendance->breaks->map(function ($break) {
+        $breaks = $attendance->breaks->map(function ($break): array {
             return [
                 'break_in' => $break->break_in
                     ? Carbon::parse($break->break_in)->format('H:i')
@@ -107,8 +119,16 @@ class AdminAttendanceController extends Controller
         ));
     }
 
-    public function update(CorrectionRequest $request, $id)
-    {
+    /**
+     * 管理者が勤怠情報を修正する。
+     *
+     * @param  CorrectionRequest  $request  勤怠修正フォームのリクエスト
+     * @param  int  $id  修正対象の勤怠ID
+     */
+    public function update(
+        CorrectionRequest $request,
+        int $id
+    ): RedirectResponse {
         $attendance = Attendance::findOrFail($id);
 
         $attendance->update([

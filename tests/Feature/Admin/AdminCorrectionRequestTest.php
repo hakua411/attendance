@@ -203,6 +203,7 @@ class AdminCorrectionRequestTest extends TestCase
         // 修正前の勤怠
         $attendance = Attendance::factory()->create([
             'user_id' => $user->id,
+            'date' => '2026-10-07',
             'clock_in' => '09:00:00',
             'clock_out' => '18:00:00',
         ]);

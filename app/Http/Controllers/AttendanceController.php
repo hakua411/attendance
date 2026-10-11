@@ -8,16 +8,22 @@ use App\Models\ApplicationBreak;
 use App\Models\Attendance;
 use App\Models\AttendanceBreak;
 use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
-    public function create()
+    /**
+     * 勤怠登録画面を表示する。
+     */
+    public function create(): View
     {
         $user = auth()->user();
+        $now = Carbon::now();
 
-        $formattedDate = Carbon::now()->isoFormat('YYYY年MM月DD日(ddd)');
-        $formattedTime = Carbon::now()->format('H:i');
+        $formattedDate = $now->isoFormat('YYYY年MM月DD日(ddd)');
+        $formattedTime = $now->format('H:i');
 
         return view('user.attendance-register', compact(
             'user',
@@ -26,7 +32,10 @@ class AttendanceController extends Controller
         ));
     }
 
-    public function clockIn()
+    /**
+     * 出勤時刻を登録する。
+     */
+    public function clockIn(): RedirectResponse
     {
         $user = auth()->user();
 
@@ -47,13 +56,29 @@ class AttendanceController extends Controller
         return redirect()->route('attendance.create');
     }
 
-    public function breakIn()
+    /**
+     * 休憩開始時刻を登録する。
+     */
+    public function breakIn(): RedirectResponse
     {
         $user = auth()->user();
 
         $attendance = $user->attendances()
             ->whereDate('date', today())
             ->first();
+
+        if (! $attendance || $attendance->clock_out) {
+            return redirect()->route('attendance.create');
+        }
+
+        // すでに休憩中なら、新しい休憩を登録しない
+        $openBreak = $attendance->breaks()
+            ->whereNull('break_out')
+            ->exists();
+
+        if ($openBreak) {
+            return redirect()->route('attendance.create');
+        }
 
         AttendanceBreak::create([
             'attendance_record_id' => $attendance->id,
@@ -63,7 +88,10 @@ class AttendanceController extends Controller
         return redirect()->route('attendance.create');
     }
 
-    public function breakOut()
+    /**
+     * 休憩終了時刻を登録する。
+     */
+    public function breakOut(): RedirectResponse
     {
         $user = auth()->user();
 
@@ -71,10 +99,18 @@ class AttendanceController extends Controller
             ->whereDate('date', today())
             ->first();
 
+        if (! $attendance) {
+            return redirect()->route('attendance.create');
+        }
+
         $break = $attendance->breaks()
             ->whereNull('break_out')
             ->latest()
             ->first();
+
+        if (! $break) {
+            return redirect()->route('attendance.create');
+        }
 
         $break->update([
             'break_out' => Carbon::now(),
@@ -83,7 +119,10 @@ class AttendanceController extends Controller
         return redirect()->route('attendance.create');
     }
 
-    public function clockOut()
+    /**
+     * 退勤時刻を登録する。
+     */
+    public function clockOut(): RedirectResponse
     {
         $user = auth()->user();
 
@@ -91,7 +130,16 @@ class AttendanceController extends Controller
             ->whereDate('date', today())
             ->first();
 
-        if ($attendance->clock_out) {
+        if (! $attendance || $attendance->clock_out) {
+            return redirect()->route('attendance.create');
+        }
+
+        // 休憩中の場合は、先に休憩終了を登録する
+        $openBreak = $attendance->breaks()
+            ->whereNull('break_out')
+            ->exists();
+
+        if ($openBreak) {
             return redirect()->route('attendance.create');
         }
 
@@ -102,7 +150,12 @@ class AttendanceController extends Controller
         return redirect()->route('attendance.create');
     }
 
-    public function store(Request $request)
+    /**
+     * 送信された操作に応じて勤怠処理を実行する。
+     *
+     * @param  Request  $request  フォームから送信されたリクエスト
+     */
+    public function store(Request $request): RedirectResponse
     {
         if ($request->action === 'clock_in') {
             return $this->clockIn();
@@ -119,10 +172,21 @@ class AttendanceController extends Controller
         if ($request->action === 'clock_out') {
             return $this->clockOut();
         }
+
+        return redirect()->route('attendance.create');
     }
 
-    public function correctionRequest(CorrectionRequest $request, $id)
-    {
+    /**
+     * 勤怠修正申請を登録する。
+     * 管理者の場合は、管理者による直接修正を実行する。
+     *
+     * @param  CorrectionRequest  $request  勤怠修正申請の入力とバリデーション
+     * @param  int  $id  修正対象の勤怠ID
+     */
+    public function correctionRequest(
+        CorrectionRequest $request,
+        int $id
+    ): RedirectResponse {
         // 管理者の場合は、管理者による直接修正
         if (auth()->user()->admin_status == 1) {
             return app(AdminAttendanceController::class)->update($request, $id);
@@ -130,7 +194,8 @@ class AttendanceController extends Controller
 
         $validated = $request->validated();
 
-        $attendance = Attendance::findOrFail($id);
+        $attendance = Attendance::where('user_id', auth()->id())
+            ->findOrFail($id);
 
         $application = Application::create([
             'user_id' => auth()->id(),

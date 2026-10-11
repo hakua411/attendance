@@ -32,7 +32,8 @@ Route::post('/attendance', [AttendanceController::class, 'store'])
     ->middleware('auth')
     ->name('attendance.store');
 
-Route::get('/attendance/list', [AttendanceListDetailController::class, 'index']);
+Route::get('/attendance/list', [AttendanceListDetailController::class, 'index'])
+    ->middleware('auth');
 
 Route::get('/attendance/{id}', [AttendanceListDetailController::class, 'show'])
     ->middleware('auth')
