@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Application;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AdminCorrectionRequestController extends Controller
@@ -36,7 +37,6 @@ class AdminCorrectionRequestController extends Controller
      * 修正申請の詳細を表示する。
      *
      * @param  int  $id  修正申請ID
-     * @return View
      */
     public function show(int $id): View
     {
@@ -69,43 +69,57 @@ class AdminCorrectionRequestController extends Controller
      * 修正申請を承認し、勤怠情報に反映する。
      *
      * @param  int  $id  修正申請ID
-     * @return RedirectResponse
      */
     public function approve(int $id): RedirectResponse
     {
+        // 承認待ちの申請だけを取得する
         $application = Application::with([
             'attendance',
             'applicationBreaks',
-        ])->findOrFail($id);
+        ])
+            ->where('approval_status', 0)
+            ->findOrFail($id);
 
-        $attendance = $application->attendance;
+        DB::transaction(function () use ($application) {
+            $attendance = $application->attendance;
 
-        // 出勤・退勤を反映
-        $date = $attendance->date->format('Y-m-d');
+            // 勤怠日付を取得する
+            $date = $attendance->date->format('Y-m-d');
 
-        $attendance->clock_in = $date.' '.Carbon::parse($application->new_clock_in)->format('H:i:s');
-        $attendance->clock_out = $date.' '.Carbon::parse($application->new_clock_out)->format('H:i:s');
+            // 出勤・退勤時刻を反映する
+            $attendance->clock_in = $date.' '.Carbon::parse(
+                $application->new_clock_in
+            )->format('H:i:s');
 
-        $attendance->save();
+            $attendance->clock_out = $date.' '.Carbon::parse(
+                $application->new_clock_out
+            )->format('H:i:s');
 
-        // 既存の休憩を削除
-        $attendance->breaks()->delete();
+            $attendance->save();
 
-        // 申請された休憩を反映
-        foreach ($application->applicationBreaks as $applicationBreak) {
-            $attendance->breaks()->create([
-                'break_in' => Carbon::parse(
-                    $date.' '.Carbon::parse($applicationBreak->break_in)->format('H:i:s')
-                ),
-                'break_out' => Carbon::parse(
-                    $date.' '.Carbon::parse($applicationBreak->break_out)->format('H:i:s')
-                ),
-            ]);
-        }
+            // 既存の休憩を削除する
+            $attendance->breaks()->delete();
 
-        // 申請を承認済みにする
-        $application->approval_status = 1;
-        $application->save();
+            // 申請された休憩を反映する
+            foreach ($application->applicationBreaks as $applicationBreak) {
+                $attendance->breaks()->create([
+                    'break_in' => Carbon::parse(
+                        $date.' '.Carbon::parse(
+                            $applicationBreak->break_in
+                        )->format('H:i:s')
+                    ),
+                    'break_out' => Carbon::parse(
+                        $date.' '.Carbon::parse(
+                            $applicationBreak->break_out
+                        )->format('H:i:s')
+                    ),
+                ]);
+            }
+
+            // 申請を承認済みにする
+            $application->approval_status = 1;
+            $application->save();
+        });
 
         return redirect('/stamp_correction_request/list');
     }
