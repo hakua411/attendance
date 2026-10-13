@@ -25,23 +25,31 @@ Route::post('/admin/logout', [
 ]);
 
 Route::get('/attendance', [AttendanceController::class, 'create'])
-    ->middleware('auth')
+    ->middleware(['auth', 'verified'])
     ->name('attendance.create');
 
 Route::post('/attendance', [AttendanceController::class, 'store'])
-    ->middleware('auth')
+    ->middleware(['auth', 'verified'])
     ->name('attendance.store');
 
 Route::get('/attendance/list', [AttendanceListDetailController::class, 'index'])
-    ->middleware('auth');
+    ->middleware(['auth', 'verified']);
 
 Route::get('/attendance/{id}', [AttendanceListDetailController::class, 'show'])
-    ->middleware('auth')
+    ->middleware(['auth', 'verified'])
     ->name('attendance.show');
 
 Route::get('/stamp_correction_request/list', function () {
-    if ((int) auth()->user()->admin_status === 1) {
+    $user = auth()->user();
+
+    // 管理者はメール認証なしで一覧を表示できる
+    if ((int) $user->admin_status === 1) {
         return app(AdminCorrectionRequestController::class)->index();
+    }
+
+    // 一般ユーザーはメール認証が必要
+    if (! $user->hasVerifiedEmail()) {
+        return redirect()->route('verification.notice');
     }
 
     return app(CorrectionRequestController::class)->index();
@@ -60,12 +68,12 @@ Route::post('/stamp_correction_request/approve/{id}', [
 ])->middleware(['auth', 'admin']);
 
 Route::get('/application/{id}', [CorrectionRequestController::class, 'show'])
-    ->middleware('auth');
+    ->middleware(['auth', 'verified']);
 
 Route::post(
     '/attendance/{id}',
     [AttendanceController::class, 'correctionRequest']
-)->middleware('auth');
+)->middleware(['auth', 'verified']);
 
 Route::get('/admin/attendance/list', [
     AdminAttendanceController::class,
@@ -90,4 +98,9 @@ Route::get('/admin/staff/list', [
 Route::get('/admin/attendance/staff/{id}', [
     AdminStaffController::class,
     'show',
+])->middleware(['auth', 'admin']);
+
+Route::post('/export', [
+    AdminStaffController::class,
+    'export',
 ])->middleware(['auth', 'admin']);
