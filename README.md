@@ -125,6 +125,17 @@ export default defineConfig({
  ./vendor/bin/sail npm run dev
 ```
    （エイリアス推奨: alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'）
+### 9.アプリケーションへのアクセス
+ブラウザで`http://localhost`にアクセスします。
+
+## テスト実行
+```bash
+sail artisan test
+```
+カバレッジ付きで実行する場合：
+```bash
+sail artisan test --coverage
+```
 
 ## ログイン情報
 - ユーザー1（一般）: user1@example.com / password
