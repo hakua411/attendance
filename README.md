@@ -81,6 +81,8 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 
 export default defineConfig({
+  publicDir: 'public',
+
   plugins: [
     laravel({
       input: [
@@ -126,7 +128,7 @@ export default defineConfig({
 ```
    （エイリアス推奨: alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'）
 ### 9.アプリケーションへのアクセス
-ブラウザで`http://localhost`にアクセスします。
+ブラウザで http://localhost にアクセスします。
 
 ## テスト実行
 ```bash
