@@ -59,4 +59,37 @@ class Attendance extends Model
             'attendance_record_id'
         );
     }
+
+    /**
+     * この勤怠記録の合計休憩時間を分単位で取得する。
+     */
+    public function getTotalBreakMinutes(): int
+    {
+        return (int) $this->breaks
+            ->filter(
+                fn (AttendanceBreak $break) => $break->break_in !== null
+                    && $break->break_out !== null
+            )
+            ->sum(
+                fn (AttendanceBreak $break) => (int) $break->break_in->diffInMinutes(
+                    $break->break_out
+                )
+            );
+    }
+
+    /**
+     * この勤怠記録の実働時間を分単位で取得する。
+     */
+    public function getTotalWorkMinutes(): int
+    {
+        if ($this->clock_in === null || $this->clock_out === null) {
+            return 0;
+        }
+
+        $workMinutes = (int) $this->clock_in->diffInMinutes(
+            $this->clock_out
+        );
+
+        return max(0, $workMinutes - $this->getTotalBreakMinutes());
+    }
 }

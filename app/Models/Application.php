@@ -21,6 +21,11 @@ class Application extends Model
         'application_date',
     ];
 
+    protected $casts = [
+        'application_date' => 'datetime',
+        'approval_status' => 'integer',
+    ];
+
     /**
      * この修正申請を行ったユーザーを取得する。
      *
