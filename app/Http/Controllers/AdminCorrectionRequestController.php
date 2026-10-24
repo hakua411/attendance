@@ -20,14 +20,20 @@ class AdminCorrectionRequestController extends Controller
             ->get();
 
         $applications->each(function ($application) {
+            // 日本語のステータスを文字列として扱う
+            $application->mergeCasts([
+                'approval_status' => 'string',
+            ]);
+
             $application->setRelation(
                 'AttendanceRecord',
                 $application->attendance
             );
 
-            $application->approval_status = (int) $application->approval_status === 0
-                ? '承認待ち'
-                : '承認済み';
+            $application->approval_status =
+                (int) $application->getRawOriginal('approval_status') === 0
+                    ? '承認待ち'
+                    : '承認済み';
         });
 
         return view('admin.admin-application-list', compact('applications'));
