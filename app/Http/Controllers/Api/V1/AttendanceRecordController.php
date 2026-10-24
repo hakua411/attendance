@@ -11,6 +11,7 @@ use App\Models\Attendance;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
 
 class AttendanceRecordController extends Controller
@@ -124,7 +125,7 @@ class AttendanceRecordController extends Controller
     /**
      * 勤怠情報を削除する。
      */
-    public function destroy(int $attendanceRecord): JsonResponse
+    public function destroy(int $attendanceRecord): Response
     {
         $attendance = Attendance::findOrFail($attendanceRecord);
 
